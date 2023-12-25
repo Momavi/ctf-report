@@ -1,30 +1,33 @@
 import { useState } from "react";
 import axios from "axios";
 import "./Form.css"; // Импорт файла стилей
-import DragDrop from "./DragDrop";
+import { FileUploader } from "react-drag-drop-files";
 
 export default function Form() {
   // Состояние для хранения номера варианта и отчета
   const [variant, setVariant] = useState(1);
-  const [report, setReport] = useState(null);
 
   // Состояние для хранения ошибок и сообщений
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
 
+  const fileTypes = ["DOCX", "TXT", "PDF"];
+  const [report, setReport] = useState(null);
+  const handleChangeFile = (file) => {
+    setReport(file);
+  };
 
   // Функция для обработки изменения полей ввода
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
+    const { name, value } = e.target;
     if (name === "variant") {
       setVariant(value);
-    } else if (name === "report") {
-      setReport(files[0]);
     }
   };
 
   // Функция для обработки отправки формы
   const handleSubmit = async (e) => {
+    console.log(report);
     e.preventDefault();
     // Проверка валидности номера варианта
     if (!variant || isNaN(variant) || variant < 1 || variant > 20) {
@@ -46,9 +49,9 @@ export default function Form() {
     formData.append("report", report);
     // Отправка данных на сервер с помощью axios
     try {
-      const response = await axios.post("/api/report", formData, {
+      const response = await axios.post("http://localhost:3000/upload", formData, {
         headers: {
-          "Content-Type": "multipart/form-data",
+          "Content-Type": `multipart/form-data; boundary=${formData._boundary}`,
         },
       });
       // Получение результата от сервера
@@ -71,30 +74,39 @@ export default function Form() {
   };
 
   return (
-    <div className="license">
-      <h1>Отправка отчета</h1>
-      <div className="license__wrapper">
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="variant">Номер варианта</label>
-            <input
-              type="number"
-              id="variant"
-              name="variant"
-              value={variant}
-              onChange={handleChange}
-              min="1"
-              max="20"
-            />
+    <div className="mainPage__wrapper">
+      <div className="card">
+        <h1>Отправка отчета</h1>
+        <div className="card__wrapper">
+          <div className="form">
+            <div className="form-group">
+              <label htmlFor="variant">Номер варианта</label>
+              <input
+                type="number"
+                id="variant"
+                name="variant"
+                value={variant}
+                onChange={handleChange}
+                min="1"
+                max="20"
+              />
+            </div>
+            <div className="form-file">
+              <FileUploader
+                handleChange={handleChangeFile}
+                name="report"
+                classes="drop_zone"
+                types={fileTypes}
+                label="Загрузите или перетащите файл формата "
+              />
+            </div>
+            <button onClick={handleSubmit}>Отправить</button>
           </div>
-          <div className="form-group">
-            <DragDrop />
-          </div>
-          <button type="submit">Отправить</button>
-        </form>
+        </div>
+        {error && <div className="error">{error}</div>}
+        {message && <div className="message">{message}</div>}
       </div>
-      {error && <div className="error">{error}</div>}
-      {message && <div className="message">{message}</div>}
+      <div className="additional">dd</div>
     </div>
   );
 }
